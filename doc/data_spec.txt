@@ -1,0 +1,15 @@
+// define the way the data is saved to files:
+
+// Boards and files
+board_id, board_name, [users], [documents]
+
+Documents:
+doc-id, doc-name, last_update, date_created, ---f2938yr9823yr---DATA---f2938yr9823yr---
+
+full:
+1,"New Board!", [1, 2, 3, 4], [
+    1,"My file!",10000,201203,[delim]DATA[delim]
+    2,"My second file!",10000,2030102,[delim]DATA[delim]
+]
+
+1,"Alexandre","alexandre@test.org","123",[1,1241923,[delim]Notification sample1[delim]]

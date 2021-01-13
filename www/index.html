@@ -1,0 +1,70 @@
+<html>
+<head>
+
+</head>
+
+<body>
+    <h1>Hello world!</h1>
+    <p id="username"></p>
+
+    <form id="form">
+        <input name="email" type="text"><br>
+        <input name="password" type="password"><br>
+        <button>Submit</button>
+    </form>
+
+    <ul id="ntf-list"></ul>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    var socket = io();
+
+    var ntf_list = document.getElementById("ntf-list");
+    var form = document.getElementById('form');
+    var input = document.getElementById('input');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form_data = new FormData(form);
+        let data = {};
+        for (let pair of form_data.entries())
+            data[pair[0]] = pair[1];
+
+        socket.emit('login', data);
+    });
+
+    socket.on("login_ret", data => {
+        console.log(data);
+        if (data.data != null)
+        {
+            let { notifications } = data.data;
+            for (const n of notifications)
+            {
+                let li = document.createElement("li");
+                li.innerText = n.contents;
+                ntf_list.appendChild(li);
+            }
+        }
+    });
+    
+    socket.on("user_update", data => {
+        console.log("Received update", data);
+        // Process each update
+        for (const up of data)
+        {
+            switch (up.type)
+            {
+            case 0:
+                console.log("New ntf...");
+                let li = document.createElement("li");
+                li.innerText = up.data.contents;
+                ntf_list.appendChild(li);
+                break;
+            }
+        }
+    });
+    </script>
+</body>
+</html>

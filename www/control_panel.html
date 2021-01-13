@@ -1,0 +1,30 @@
+<html>
+<head>
+
+</head>
+<body>
+    <h2>Issue notification</h2>
+    <form id="in_form">
+        <label>User Id: </label><input type="text" id="in_user_id"><br>
+        <label>Message: </label><input type="text" id="in_text"><br>
+        <button>Submit</button>
+    </form>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+
+        let in_form = document.getElementById("in_form");
+        let in_user_id = document.getElementById("in_user_id");
+        let in_text = document.getElementById("in_text");
+
+        in_form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            socket.emit("issue_ntf", {
+                user_id: parseInt(in_user_id.value),
+                contents: in_text.value
+            });
+        })
+    </script>
+</body>
+</html>
