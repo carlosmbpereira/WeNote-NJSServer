@@ -10,6 +10,13 @@ exports.NTF_TYPE = {
 }
 
 
+function NetNtf(type, data)
+{
+    this.type = type;
+    this.data = data;
+}
+
+
 
 function N_Generic(id)
 {

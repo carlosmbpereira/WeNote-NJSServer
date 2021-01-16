@@ -1,5 +1,6 @@
-const { file_head } = require("./types");
-
+const { file_head, User, Board } = require("./types");
+const { bulk, serialize, load } = require("./serialization");
+const fs = require("fs");
 
 
 exports.ServerData = function()
@@ -10,10 +11,52 @@ exports.ServerData = function()
     this.ids = null;
 
 
-    this.used_files = [];
 
-    this.notifiers = {
-        boards: [],
+    this.load = function()
+    {
+        if (fs.existsSync("database/users"))
+        {
+            const user_file_data = fs.readFileSync("database/users", "utf-8");
+            this.users = bulk.load(user_file_data, load.user);
+        }
+        else
+            this.users = [];
+
+        if (fs.existsSync("database/boards"))
+        {
+            const board_file_data = fs.readFileSync("database/boards", "utf-8");
+            this.boards = bulk.load(board_file_data, load.board);
+        }
+        else
+            this.boards = [];
+
+        if (fs.existsSync("database/ids"))
+        {
+            const ids_file_data = fs.readFileSync("database/ids", "utf-8");
+            this.ids = bulk.load(ids_file_data, load.ids)[0];
+        }
+        else
+            this.ids = {
+                last_user_id: 0, last_board_id: 0, last_file_id: 0, last_ntf_id: 0
+            };
+    }
+
+    this.save = function(callback)
+    {
+        let files_written = 0;
+        const user_data = bulk.save(this.users, serialize.user);
+        const board_data = bulk.save(this.boards, serialize.boards);
+        const ids_data = serialize.ids(this.ids);
+
+        let end_fn = () => {
+            files_written += 1;
+            if (files_written >= 3)
+                callback();
+        }
+
+        fs.writeFile("database/users", user_data, end_fn);
+        fs.writeFile("database/boards", board_data, end_fn);
+        fs.writeFile("database/ids", ids_data, end_fn);
     }
 
     // Indicates if the database has been fully loaded.
@@ -28,25 +71,18 @@ exports.ServerData = function()
     {
         let id = this.last_user_id + 1;
         this.last_user_id = id;
-        return {
-            id: id,
-            name: name,
-            email: email,
-            password: password,
-            notifications: []
-        };
+        let user = new User(id, name, email, password, []);
+        this.users.push(user);
+        return user;
     }
 
-    this.new_board = function(name)
+    this.new_board = function(owner_id, name)
     {
         let id = this.last_board_id + 1;
         this.last_board_id = id;
-        return {
-            id: id,
-            name: name,
-            users: [],
-            files: []
-        };
+        let board = new Board(id, owner_id, name, [owner_id], []);
+        this.boards.push(board);
+        return board;
     }
 
     this.new_notification = function(user_id, contents)
@@ -54,11 +90,7 @@ exports.ServerData = function()
         let id = this.last_notification_id + 1;
         this.last_notification_id = id;
         let user = this.get_user(user_id);
-        let not = {
-            id: user_id,
-            time: Date.now(),
-            contents: contents,
-        };
+        let not = new Notification(id, Date.now(), contents);
         user.notifications.push(not);
         return not;
     }
@@ -70,14 +102,6 @@ exports.ServerData = function()
         user.notifications = user.notifications.filter(ntf => ntf.id !== ntf_id);
     }
     
-
-    
-
-    this.save = function()
-    {
-        
-    }
-
 
 
     this.board_new_file = function(socket, board_id, file_name)
@@ -149,7 +173,10 @@ exports.ServerData = function()
 
     this.boards_of_user = function(user_id)
     {
-        
+        let boards = [];
+        for (const b of this.boards)
+            if (b.users.indexOf(user_id) != -1)
+                boards.push(b);
     }
 
 

@@ -15,6 +15,8 @@ app.get("/", (req, res) => {
 
 http.listen(port, () => {
     data = new ServerData();
+    data.load();
+
     // Read files
     build_io(data, io);
     

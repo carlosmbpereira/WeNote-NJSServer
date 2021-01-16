@@ -1,4 +1,23 @@
 
+function Client(socket)
+{
+    this.socket = socket;
+    this.net_ntfs = [];
+
+    this.notify = function(net_ntf)
+    {
+        this.net_ntfs.push(net_ntf);
+    }
+
+    this.dispatch = function(io, message)
+    {
+        if (this.net_ntfs.length == 0)
+            return;
+        io.to(this.socket).emit(message, this.net_ntfs);
+        this.net_ntfs = [];
+    }
+}
+
 
 function ControlPanelManager()
 {
@@ -9,12 +28,19 @@ function ControlPanelManager()
         const cp = this.get(socket);
         if (cp != null)
             return cp;
-        let new_cp = {
-            socket: socket,
-            notifications: []
-        };
+        let new_cp = new Client(socket);
         this.cps.push(new_cp);
         return new_cp;
+    }
+
+    this.pop = function(socket)
+    {
+        let index = this.cps.findIndex(cp => cp.socket == socket);
+        if (index == -1)
+            return null;
+        const cp = this.cps[index];
+        this.cps.splice(index, 1);
+        return cp;
     }
 
     this.get = function(socket)
@@ -25,35 +51,22 @@ function ControlPanelManager()
         return null;
     }
 
-    this.notify = function(socket, ntf_type, ntf_data)
+    this.notify = function(socket, net_ntf)
     {
         const cp = this.get(socket);
-        cp.notifications.push({
-            type: ntf_type,
-            data: ntf_data
-        });
+        cp.notify(net_ntf);
     }
 
-    this.notify_all = function(ntf_type, ntf_data)
+    this.notify_all = function(net_ntf)
     {
-        let ntf = {
-            type: ntf_type,
-            data: ntf_data
-        };
-
         for (const cp of cps)
-            cp.notifications.push(ntf);
+            cp.notifications.push(net_ntf);
     }
 
-    this.dispatch_ntfs = function(io)
+    this.dispatch = function(io)
     {
         for (const cp of cps)
-        {
-            if (cp.notifications.length == 0)
-                continue;
-            io.to(cp.socket).emit("cpanel_update", cp.notifications);
-            cp.notifications = [];
-        }
+            cp.dispatch(io, "cpanel_update");
     }
 }
 
@@ -134,5 +147,66 @@ function BoardManager()
 {
     this.boards = [];
 
+    this.register = function(board_id, socket)
+    {
+        const board = this.ensure_board(board_id);
+        board.clients.push(socket);
+        return board;
+    }
 
+    this.unregister = function(board, socket)
+    {
+        for (const i in board.clients)
+            if (board.clients[i] == socket)
+            {
+                board.clients.splice(i, 1);
+                return;
+            }
+    }
+
+    this.get_board = function(board_id)
+    {
+        for (const b of this.boards)
+            if (b.board_id == board_id)
+                return b;
+        return null;
+    }
+
+    this.ensure_board = function(board_id)
+    {
+        const b = get_board(board_id);
+        if (b !== null)
+            return b;
+        let new_board = {
+            board_id: board_id,
+            clients: [],
+            notifications: []
+        };
+        this.boards.push(new_board);
+        return new_board;
+    }
+
+    this.notify = function(board_id, ntf_type, ntf_data)
+    {
+        const board = this.get_board(board_id);
+        if (board === null)
+            return;
+        board.notifications.push({type: ntf_type, data: ntf_data});
+    }
 }
+
+
+
+function FileManager()
+{
+    this.files = [];
+
+    /*this.sample = {
+        file: file,
+        clients: []
+    }*/
+}
+
+
+exports.UserManager = UserManager;
+exports.BoardManager = BoardManager;

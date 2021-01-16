@@ -10,6 +10,14 @@
         <button>Submit</button>
     </form>
 
+    <form id="reg_form">
+        <label>Name: </label><input type="text" id="reg_name"><br>
+        <label>Email: </label><input type="text" id="reg_email"><br>
+        <label>Password: </label><input type="password" id="reg_password"><br>
+        <button>Submit</button>
+    </form>
+    <button id="bt_save">Save Database</button>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         let socket = io();
@@ -18,12 +26,50 @@
         let in_user_id = document.getElementById("in_user_id");
         let in_text = document.getElementById("in_text");
 
+        let reg_form = document.getElementById("reg_form");
+        let reg_name = document.getElementById("reg_name");
+        let reg_email = document.getElementById("reg_email");
+        let reg_password = document.getElementById("reg_password");
+
+        let bt_save = document.getElementById("bt_save");
+
         in_form.addEventListener("submit", (e) => {
             e.preventDefault();
-            socket.emit("issue_ntf", {
+            if (in_user_id.value.length == 0)
+                return;
+            socket.emit("cpanel_issue_ntf", {
                 user_id: parseInt(in_user_id.value),
                 contents: in_text.value
             });
+            in_form.reset();
+        });
+
+        reg_form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (reg_name.value.length == 0)
+                return;
+            socket.emit("register_user", {
+                name: reg_name.value,
+                email: reg_email.value,
+                password: reg_password.value
+            });
+            reg_form.reset();
+        });
+
+        bt_save.addEventListener("click", () => {
+            socket.emit("cpanel_save", null);
+        });
+
+
+        // Returns
+        socket.on("cpanel_save_done", () => {
+            alert("Save done!");
+        });
+        socket.on("register_user_done", () => {
+            alert("User registered!");
+        });
+        socket.on("cpanel_issue_ntf_done", () => {
+            alert("Notification issued!");
         })
     </script>
 </body>

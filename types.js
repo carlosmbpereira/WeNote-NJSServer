@@ -3,13 +3,14 @@ function User(
     id,
     name,
     email,
-    password
+    password,
+    notifications = []
 ) {
     this.id = id;
     this.name = name;
     this.email = email;
     this.password = password;
-    this.notifications = [];
+    this.notifications = notifications;
 
     this.public_data = function()
     {
@@ -36,13 +37,15 @@ function User(
 function File(
     id,
     name,
-    time_create
+    time_create = Date.now(),
+    time_update = Date.now(),
+    contents = ""
 ) {
     this.id = id;
     this.name = name;
     this.time_create = time_create;
-    this.time_update = time_create;
-    this.contents = "";
+    this.time_update = time_update;
+    this.contents = contents;
 
     this.header = function()
     {
@@ -61,12 +64,14 @@ function Board(
     id,
     owner_id,
     name,
+    users = [],
+    files = []
 ) {
     this.id = id;
     this.owner_id = owner_id;
     this.name = name;
-    this.users = [];
-    this.files = [];
+    this.users = users;
+    this.files = files;
 
     this.header = function()
     {

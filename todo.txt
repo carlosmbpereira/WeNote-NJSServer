@@ -1,0 +1,4 @@
+TODO Fix case where user may receive updates that were issued before they joined a resource.
+    Possible fixes:
+        Notifications queue for each user. THIS
+        Dispatch notifications any time someone connects to a resource.

@@ -1,46 +1,9 @@
 const fs = require("fs");
+const { User, File, Board, Notification } = require("./types");
 
 const udelim = "---af9whf0193h4f9hf913098fh---"
 
-// Data creation helpers
 
-
-
-
-sample_board = {
-    id: 1,
-    name: "Hello world!",
-    users: [1, 2, 3],
-    files: [
-        {
-            id: 1,
-            creation_date: 10010203,
-            update_date: 102301402,
-            name: "Sample file!",
-            contents: "This is a sample file\nand stuff.",
-        },
-        {
-            id: 2,
-            creation_date: 12994123,
-            update_date: 120831084,
-            name: "Sample file 2!",
-            contents: "This is a sample file\nand stuff.",
-        }
-    ]
-}
-
-sample_user = {
-    id: 1,
-    name: "Alexandre",
-    email: "alexandre@test.org",
-    password: "1234",
-    notifications: [
-        {
-            time: 19240123,
-            message: "You have a new file!",
-        },
-    ]
-}
 
 // Loading data from files
 
@@ -54,7 +17,7 @@ class NavContext
 
     peek()
     {
-        return this.data[ptr];
+        return this.data[this.ptr];
     }
 
     eob()
@@ -63,7 +26,7 @@ class NavContext
     }
 }
 
-const TYPE_INTEGER = 1
+const TYPE_INTEGER = 0
 const TYPE_STRING = 1
 
 function extract(nav_ctx, type)
@@ -94,66 +57,53 @@ function extract(nav_ctx, type)
 
 
 
-// Users
+// Loaders
 
 function load_user(nav_ctx)
 {
-    let obj = {};
-
-    obj.id = extract(nav_ctx, TYPE_INTEGER);
-    obj.name = extract(nav_ctx, TYPE_STRING);
-    obj.email = extract(nav_ctx, TYPE_STRING);
-    obj.password = extract(nav_ctx, TYPE_STRING);
-    obj.notifications = [];
-    while (true)
-    {
-        if (data[nav_ctx.ptr] == "]")
-            break;
-        let n = {};
-        n.id = extract(nav_ctx, TYPE_INTEGER);
-        n.time = extract(nav_ctx, TYPE_INTEGER);
-        n.contents = extract(nav_ctx, TYPE_STRING);
-        obj.notifications.push(n);
-    }
-
-    return obj;
+    let id = extract(nav_ctx, TYPE_INTEGER);
+    let name = extract(nav_ctx, TYPE_STRING);
+    let email = extract(nav_ctx, TYPE_STRING);
+    let password = extract(nav_ctx, TYPE_STRING);
+    let notifications = [];
+    while (nav_ctx.peek() != "]")
+        notifications.push(load_notification(nav_ctx));
+    nav_ctx.ptr += 1;
+    return new User(id, name, email, password, notifications);
 }
 
 function load_file(nav_ctx)
 {
-    const { data, ptr } = nav_ctx;
-    let obj = {};
-    obj.id = extract(nav_ctx, TYPE_INTEGER);
-    obj.name = extract(nav_ctx, TYPE_STRING);
-    obj.time_create = extract(nav_ctx, TYPE_INTEGER);
-    obj.time_update = extract(nav_ctx, TYPE_INTEGER);
-    obj.contents = extract(nav_ctx, TYPE_STRING);
-    return obj;
+    let id = extract(nav_ctx, TYPE_INTEGER);
+    let name = extract(nav_ctx, TYPE_STRING);
+    let time_create = extract(nav_ctx, TYPE_INTEGER);
+    let time_update = extract(nav_ctx, TYPE_INTEGER);
+    let contents = extract(nav_ctx, TYPE_STRING);
+    return new File(id, name, time_create, time_update, contents);
 }
 
 function load_board(nav_ctx)
 {
-    let obj = {};
-    obj.id = extract(nav_ctx, TYPE_INTEGER);
-    obj.owner_id = extract(nav_ctx, TYPE_INTEGER);
-    obj.name = extract(nav_ctx, TYPE_STRING);
-    obj.users = [];
-    while (true)
-    {
-        if (nav_ctx.peek() == "]")
-            break;
-        obj.users.push(extract(nav_ctx, TYPE_INTEGER));
-    }
+    let id = extract(nav_ctx, TYPE_INTEGER);
+    let owner_id = extract(nav_ctx, TYPE_INTEGER);
+    let name = extract(nav_ctx, TYPE_STRING);
+    let users = [];
+    let files = [];
+    while (nav_ctx.peek() != "]")
+        users.push(extract(nav_ctx, TYPE_INTEGER));
+    nav_ctx.ptr += 1;
+    while (nav_ctx.peek() != "]")
+        files.push(load_file(nav_ctx));
+    nav_ctx.ptr += 1;
+    return new Board(id, owner_id, name, users, files);
+}
 
-    obj.files = [];
-    while (true)
-    {
-        if (nav_ctx.peek() == "]")
-            break;
-        obj.files.push(load_file(nav_ctx));
-    }
-
-    return obj;
+function load_notification(nav_ctx)
+{
+    let id = extract(nav_ctx, TYPE_INTEGER);
+    let time = extract(nav_ctx, TYPE_INTEGER);
+    let contents = extract(nav_ctx, TYPE_INTEGER);
+    return new Notification(id, time, contents);
 }
 
 function load_ids(nav_ctx)
@@ -168,7 +118,7 @@ function load_ids(nav_ctx)
 
 
 
-// Conversions to storable data
+// Serialization
 
 function serialize_user(user)
 {
@@ -177,12 +127,8 @@ function serialize_user(user)
     arr.push(user.name + udelim);
     arr.push(user.email + udelim);
     arr.push(user.password + udelim);
-    for (const i in user.notifications)
-    {
-        arr.push(user.notifications[i].id + " ");
-        arr.push(user.notifications[i].time + " ");
-        arr.push(user.notifications[i].contents + udelim);
-    }
+    for (const n of user.notifications)
+        arr.push(serialize_notification(n));
     arr.push("]");
     return arr.join("");
 }
@@ -216,6 +162,15 @@ function serialize_file(file)
     return arr.join("");
 }
 
+function serialize_notification(notification)
+{
+    let arr = [];
+    arr.push(notification.id + " ");
+    arr.push(notification.time + " ");
+    arr.push(notification.contents + udelim);
+    return arr.join("");
+}
+
 function serialize_ids(ids)
 {
     let arr = [];
@@ -234,7 +189,7 @@ function save_data(data, fn_converter)
 {
     let arr = [];
     for (const i in data)
-        arr.push(fn_converter(boards[i]));
+        arr.push(fn_converter(data[i]));
     return arr.join("");
 }
 
@@ -242,22 +197,26 @@ function load_data(file_data, fn_load)
 {
     let nav_ctx = new NavContext(file_data);
     let users = [];
-    while (true)
-    {
-        if (nav_ctx.eob())
-            return users;
+    while (!nav_ctx.eob())
         users.push(fn_load(nav_ctx));
-    }
+    return users;
 }
 
 
 
-exports.save_data = save_data;
-exports.load_data = load_data;
+exports.bulk = {};
+exports.bulk.save = save_data;
+exports.bulk.load = load_data;
 
-// Loaders
-exports.load_ids = load_ids;
-
-exports.create_user = create_user;
-exports.create_file = create_file;
-exports.create_group = create_group;
+exports.load = {};
+exports.load.user = load_user;
+exports.load.file = load_file;
+exports.load.board = load_board;
+exports.load.notifications = load_notification;
+exports.load.ids = load_ids;
+exports.serialize = {};
+exports.serialize.user = serialize_user;
+exports.serialize.file = serialize_file;
+exports.serialize.board = serialize_board;
+exports.serialize.notifications = serialize_notification;
+exports.serialize.ids = serialize_ids;

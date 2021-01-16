@@ -1,4 +1,4 @@
-const { user_public_data, user_personal_data } = require("./types");
+const { UserManager } = require("./managers");
 const {
     NTF_TYPE,
     UserNtfHandler 
@@ -18,7 +18,7 @@ function periodic_notify(io, users)
 exports.build_io = function(sdt, io)
 {
     //notify_boards = new NList_Generic();
-    notify_users = new UserNtfHandler();
+    active_users = new UserManager();
 
     io.to("asf").emit("test", null);
 
@@ -26,7 +26,7 @@ exports.build_io = function(sdt, io)
         console.log("Connected");
 
         socket.on("disconnect", () => {
-            notify_users.unregister(socket.id);
+            active_users.pop(socket.id);
         });
 
         socket.on("login", data => {
@@ -43,17 +43,32 @@ exports.build_io = function(sdt, io)
                 return;
             }
 
-            notify_users.register(socket.id, user.id);
-            user = user_personal_data(user);
-            io.to(socket.id).emit("login_ret", { status: 0, data: user });
+            active_users.register(socket.id, user);
+            user = user.personal_data();
+            user.boards = sdt.boards_of_user(user.id).map(b => b.header());
+            io.to(socket.id).emit("login_ret", {status: 0, data: user});
         });
 
-        socket.on("logout", data => {
-            notify_users.remove(socket.id, data.id)
+        socket.on("register_user", data => {
+            let user = sdt.get_user_email(data.email);
+            if (user != null)
+            {
+                io.to(socket.id).emit("register_user_done", { status: 1 });
+                return;
+            }
+            user = sdt.new_user(data.name, data.email, data.password);
+            io.to(socket.id).emit("register_user_done", { status: 0 });
         });
 
         
+
+        
         // User
+        socket.on("logout", data => {
+            const user = active_users.remove(socket.id);
+
+        });
+
         socket.on("user_ntf_close", data => {
             sdt.delete_ntf(data.user_id, data.ntf_id);
         });
@@ -115,10 +130,13 @@ exports.build_io = function(sdt, io)
         });
 
         socket.on("cpanel_save", data => {
-
+            sdt.save(() => {
+                console.log("Issued save command completed. Database saved.");
+                io.to(socket.id).emit("cpanel_save_done", null);
+            });
         });
     });
 
     // Start periodic updates
-    setTimeout(periodic_notify, 1000, io, notify_users);
+    //setTimeout(periodic_notify, 1000, io, notify_users);
 }
