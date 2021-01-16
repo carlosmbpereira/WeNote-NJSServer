@@ -8,7 +8,7 @@ const {
 // Periodic functions
 function periodic_notify(io, users)
 {
-    users.dispatch(io);
+    users.dispatch_ntfs(io);
     //boards.dispatch("board_update", io);
     setTimeout(periodic_notify, 1000, io, users);
 }
@@ -45,7 +45,7 @@ exports.build_io = function(sdt, io)
 
             active_users.register(socket.id, user);
             user = user.personal_data();
-            user.boards = sdt.boards_of_user(user.id).map(b => b.header());
+            //user.boards = sdt.boards_of_user(user.id).map(b => b.header());
             io.to(socket.id).emit("login_ret", {status: 0, data: user});
         });
 
@@ -66,7 +66,6 @@ exports.build_io = function(sdt, io)
         // User
         socket.on("logout", data => {
             const user = active_users.remove(socket.id);
-
         });
 
         socket.on("user_ntf_close", data => {
@@ -125,7 +124,7 @@ exports.build_io = function(sdt, io)
         // Control panel messages
         socket.on("cpanel_issue_ntf", data => {
             let ntf = sdt.new_notification(data.user_id, data.contents);
-            notify_users.notify(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
+            active_users.notify(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
             console.log("Issued notification to user " + data.user_id);
         });
 
@@ -138,5 +137,5 @@ exports.build_io = function(sdt, io)
     });
 
     // Start periodic updates
-    //setTimeout(periodic_notify, 1000, io, notify_users);
+    setTimeout(periodic_notify, 1000, io, active_users);
 }

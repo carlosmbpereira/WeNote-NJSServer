@@ -78,6 +78,7 @@ function UserManager()
 
     this.register = function(socket, user)
     {
+        console.log("adding: ", user.id);
         let u = {
             socket: socket,
             user_id: user.id,
@@ -91,6 +92,7 @@ function UserManager()
         }
         this.users.push(u);
     }
+
 
     this.pop = function(socket)
     {
@@ -108,7 +110,7 @@ function UserManager()
 
     this.get_by_socket = function(socket)
     {
-        for (const u in this.users)
+        for (const u of this.users)
             if (u.socket == socket)
                 return u;
         return null;
@@ -116,7 +118,7 @@ function UserManager()
 
     this.get_by_user_id = function(user_id)
     {
-        for (const u in this.users)
+        for (const u of this.users)
             if (u.user_id = user_id)
                 return u;
         return null;
@@ -124,6 +126,7 @@ function UserManager()
 
     this.notify = function(user_id, ntf_type, ntf_data)
     {
+        console.log(user_id);
         const user = this.get_by_user_id(user_id);
         let ntf = {type: ntf_type, data: ntf_data};
         user.notifications.push(ntf);
