@@ -18,7 +18,11 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-    var socket = io();
+    var socket = io("http://127.0.0.1:7501");
+
+    socket.on("connect_error", (data) => {
+        console.log(data);
+    });
 
     var ntf_list = document.getElementById("ntf-list");
     var form = document.getElementById('form');
