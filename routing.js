@@ -30,7 +30,6 @@ exports.build_io = function(sdt, io)
         });
 
         socket.on("login", data => {
-            console.log("IN login ", data);
             let user = sdt.get_user_email(data.email);
             if (user === null)
             {
@@ -47,7 +46,6 @@ exports.build_io = function(sdt, io)
             active_users.register(socket.id, user);
             user = user.personal_data();
             //user.boards = sdt.boards_of_user(user.id).map(b => b.header());
-            console.log("OUT login_ret ", data);
             io.to(socket.id).emit("login_ret", {status: 0, data: user});
         });
 
