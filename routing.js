@@ -126,6 +126,7 @@ exports.build_io = function(sdt, io)
             let ntf = sdt.new_notification(data.user_id, data.contents);
             active_users.notify(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
             console.log("Issued notification to user " + data.user_id);
+            io.to(socket.id).emit("cpanel_issue_ntf_done", null);
         });
 
         socket.on("cpanel_save", data => {
