@@ -119,17 +119,19 @@ function UserManager()
     this.get_by_user_id = function(user_id)
     {
         for (const u of this.users)
-            if (u.id = user_id)
+            if (u.user_id = user_id)
                 return u;
         return null;
     }
 
     this.notify = function(user_id, ntf_type, ntf_data)
     {
-        console.log(user_id);
         const user = this.get_by_user_id(user_id);
-        let ntf = {type: ntf_type, data: ntf_data};
-        user.notifications.push(ntf);
+        if (user !== null)
+        {
+            let ntf = {type: ntf_type, data: ntf_data};
+            user.notifications.push(ntf);
+        }
     }
 
     this.dispatch_ntfs = function(io)
