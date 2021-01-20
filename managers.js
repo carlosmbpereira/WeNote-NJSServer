@@ -119,7 +119,7 @@ function UserManager()
     this.get_by_user_id = function(user_id)
     {
         for (const u of this.users)
-            if (u.id = id)
+            if (u.id = user_id)
                 return u;
         return null;
     }
