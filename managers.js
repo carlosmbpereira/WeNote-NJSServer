@@ -41,7 +41,7 @@ function LoginManager()
         let u = this.get_user(user_id);
         if (u === null)
             return;
-        u.notifications.push({type: ntf_type, data: ntf_data});
+        u.netntfs.push({type: ntf_type, data: ntf_data});
     }
 
     this.notify_users = function(user_ids, ntf_type, ntf_data)
@@ -54,10 +54,10 @@ function LoginManager()
     {
         for (let user of this.logins)
         {
-            if (user.notifications.length == 0)
+            if (user.netntfs.length == 0)
                 continue;
-            io.to(user.socket).emit("user_update", user.notifications);
-            user.notifications = [];
+            io.to(user.socket).emit("user_update", user.netntfs);
+            user.netntfs = [];
         }
     }
 }
