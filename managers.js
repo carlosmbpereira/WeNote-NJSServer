@@ -38,7 +38,7 @@ function LoginManager()
 
     this.notify_user = function(user_id, ntf_type, ntf_data)
     {
-        let u = get_user(user_id);
+        let u = this.get_user(user_id);
         if (u === null)
             return;
         u.notifications.push({type: ntf_type, data: ntf_data});
@@ -128,12 +128,29 @@ function CPManager()
     this.unregister = function(socket)
     {
         let index = -1;
-        for (let i of this.cps)
+        for (let i in this.cps)
             if (this.cps[i].socket === socket)
             {
                 this.cps.splice(index, 1);
                 return;
             }
+    }
+
+    this.notify = function(ntf_type, ntf_data)
+    {
+        for (let cp of this.cps)
+            cp.notifications.push({type: ntf_type, data: ntf_data});
+    }
+
+    this.dispatch_ntfs = function(io)
+    {
+        for (let user of this.cps)
+        {
+            if (user.notifications.length == 0)
+                continue;
+            io.to(user.socket).emit("cpanel_update", user.notifications);
+            user.notifications = [];
+        }
     }
 }
 
@@ -414,3 +431,4 @@ function FileManager()
 
 exports.LoginManager = LoginManager;
 exports.FileAccessManager = FileAccessManager;
+exports.CPManager = CPManager;

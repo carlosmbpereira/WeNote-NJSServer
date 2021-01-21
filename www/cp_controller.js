@@ -141,18 +141,36 @@ socket.on("register_user_done", () => {
 socket.on("cpanel_issue_ntf_done", () => {
     alert("Notification issued!");
 });
+socket.on("cpanel_start_done", (data) => {
+    console.log(data);
+    users = data.users;
+    notifications = data.ntfs;
+    files = data.files;
+    update_users();
+    update_files();
+    update_notifications();
+});
 
 socket.on("cpanel_update", (data) => {
+    console.log("Update!");
     for (let ntf of data)
     {
         switch (ntf.type)
         {
         case NTF_TYPE.CP_NEW_USER:
             users.push(ntf.data);
+            update_users();
+            break;
         case NTF_TYPE.CP_NEW_NOTIFICATION:
-            users.push(ntf.data);
+            notifications.push(ntf.data);
+            update_notifications();
+            break;
         case NTF_TYPE.CP_NEW_FILE:
             files.push(ntf.data);
+            update_files();
+            break;
         }
     }
 });
+
+socket.emit("cpanel_start", null);
