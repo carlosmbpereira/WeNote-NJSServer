@@ -75,8 +75,8 @@ exports.ServerData = function()
 
     this.new_notification = function(user_id, contents)
     {
-        let id = this.ids.last_notification_id + 1;
-        this.ids.last_notification_id = id;
+        let id = this.ids.last_ntf_id + 1;
+        this.ids.last_ntf_id = id;
         let user = this.get_user(user_id);
         console.log(user);
         let not = new Notification(id, Date.now(), contents);

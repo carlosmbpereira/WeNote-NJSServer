@@ -153,8 +153,9 @@ exports.build_io = function(sdt, io)
 
         socket.on("cpanel_issue_ntf", data => {
             let ntf = sdt.new_notification(data.user_id, data.contents);
-
+            console.log(data);
             logins.notify_user(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
+            ntf.user_id = data.user_id;
             cpanels.notify(NTF_TYPE.CP_NEW_NOTIFICATION, ntf);
             io.to(socket.id).emit("cpanel_issue_ntf_done", null);
         });
