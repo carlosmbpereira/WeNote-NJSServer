@@ -36,30 +36,47 @@ function User(
 
 function File(
     id,
+    owner_id,
     name,
     time_create = Date.now(),
     time_update = Date.now(),
+    users = [],
     contents = ""
 ) {
     this.id = id;
+    this.owner_id = owner_id;
     this.name = name;
     this.time_create = time_create;
     this.time_update = time_update;
+    this.users = users;
     this.contents = contents;
 
     this.header = function()
     {
         return {
             id: this.id,
+            owner_id: this.owner_id,
             name: this.name,
             time_create: this.create,
             time_update: this.update
         };
     }
+
+    // Returns true if the given user has access to the file.
+    this.user_in = function(user_id)
+    {
+        if (owner_id == user_id)
+            return true;
+        for (let u of this.users)
+            if (u == user_id)
+                return true;
+        return false;
+    }
 }
 
 
 
+/** Unused **/
 function Board(
     id,
     owner_id,

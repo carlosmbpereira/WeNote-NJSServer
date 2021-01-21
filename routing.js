@@ -1,16 +1,12 @@
-const { UserManager } = require("./managers");
-const {
-    NTF_TYPE,
-    UserNtfHandler 
-} = require("./notifiers");
+const { LoginManager, FileAccessManager } = require("./managers");
+const { STATUS, NTF_TYPE } = require("./messages");
 
 
 // Periodic functions
-function periodic_notify(io, users)
+function periodic_notify(io, logins)
 {
-    users.dispatch_ntfs(io);
-    //boards.dispatch("board_update", io);
-    setTimeout(periodic_notify, 1000, io, users);
+    logins.dispatch_ntfs(io);
+    setTimeout(periodic_notify, 1000, io, logins);
 }
 
 
@@ -18,46 +14,50 @@ function periodic_notify(io, users)
 exports.build_io = function(sdt, io)
 {
     //notify_boards = new NList_Generic();
-    active_users = new UserManager();
+    logins = new LoginManager();
+    files = new FileAccessManager();
 
-    io.to("asf").emit("test", null);
-
+    
     io.on("connection", (socket) => {
         console.log("Connected");
 
         socket.on("disconnect", () => {
-            active_users.pop(socket.id);
+            logins.logout(socket.id);
         });
 
         socket.on("login", data => {
             let user = sdt.get_user_email(data.email);
             if (user === null)
             {
-                io.to(socket.id).emit("login_ret", { status: 1, data: null });
+                io.to(socket.id).emit("login_ret", 
+                    { status: STATUS.EMAIL_NOT_REGISTERED, data: null });
                 return;
             }
 
             if (user.password != data.password)
             {
-                io.to(socket.id).emit("login_ret", { status: 2, data: null });
+                io.to(socket.id).emit("login_ret", 
+                    { status: STATUS.WRONG_PASSWORD, data: null });
                 return;
             }
 
-            active_users.register(socket.id, user);
+            logins.login(socket.id, user.id);
+
             user = user.personal_data();
-            //user.boards = sdt.boards_of_user(user.id).map(b => b.header());
-            io.to(socket.id).emit("login_ret", {status: 0, data: user});
+            user.files = sdt.user_files(user.id).map(f => f.header());
+            io.to(socket.id).emit("login_ret", 
+                {status: STATUS.OK, data: user});
         });
 
         socket.on("register_user", data => {
             let user = sdt.get_user_email(data.email);
             if (user != null)
             {
-                io.to(socket.id).emit("register_user_done", { status: 1 });
+                io.to(socket.id).emit("register_user_done", { status: STATUS.EXISTS });
                 return;
             }
             user = sdt.new_user(data.name, data.email, data.password);
-            io.to(socket.id).emit("register_user_done", { status: 0 });
+            io.to(socket.id).emit("register_user_done", { status: STATUS.OK });
         });
 
         
@@ -72,53 +72,56 @@ exports.build_io = function(sdt, io)
             sdt.delete_ntf(data.user_id, data.ntf_id);
         });
 
-        socket.on("user_new_board", data => {
-
-        });
-
-
-        // Boards
-        socket.on("board_enter", data => {
-
-        });
-
-        socket.on("board_leave", data => {
-
-        });
-
-        socket.on("board_quit", data => {
-
-        });
-
-        socket.on("board_new_file", data => {
-
-        });
-
-        socket.on("board_delete_file", data => {
-
-        });
-
-        socket.on("board_add_user", data => {
-
-        });
-
-        socket.on("board_remove_user", data => {
-
-        });
 
 
         // Files
+        socket.on("file_create", data => {
+            sdt.new_file(data.user_id, data.title);
+        });
+
+
+        socket.on("file_invite_user", data => {
+            let file = sdt.get_file(data.file_id);
+            if (!file)
+            {
+                io.to(socket.id).emit("file_invite_user_done", {status: STATUS.NOT_FOUND, data: null});
+                return;
+            }
+            if (file.user_in(data.user_id))
+            {
+                io.to(socket.id).emit("file_invite_user_done", {status: STATUS.EXISTS, data: null});
+                return;
+            }
+
+            let header = file.header();
+            let ntf = sdt.new_notification(data.user_id, "You've been added to '" + file.name + "'.");
+
+            logins.notify_user(data.user_id, NTF_TYPE.FILE_INVITE, header);
+            logins.notify_user(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
+
+            io.to(socket.id).emit("file_invite_user_done", {status: STATUS.OK, data: null});
+        });
+
+
+        socket.on("file_remove_user", data => {
+
+        });
+
+
         socket.on("file_open", data => {
 
         });
+
 
         socket.on("file_close", data => {
 
         });
 
+
         socket.on("file_edit", data => {
 
         });
+
 
 
         // Control panel messages
@@ -138,5 +141,5 @@ exports.build_io = function(sdt, io)
     });
 
     // Start periodic updates
-    setTimeout(periodic_notify, 1000, io, active_users);
+    setTimeout(periodic_notify, 1000, io, logins);
 }

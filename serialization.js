@@ -75,11 +75,15 @@ function load_user(nav_ctx)
 function load_file(nav_ctx)
 {
     let id = extract(nav_ctx, TYPE_INTEGER);
+    let owner_id = extract(nav_ctx, TYPE_INTEGER);
     let name = extract(nav_ctx, TYPE_STRING);
     let time_create = extract(nav_ctx, TYPE_INTEGER);
     let time_update = extract(nav_ctx, TYPE_INTEGER);
+    let users = [];
+    while (nav_ctx.peek() != "]")
+        users.push(extract(nav_ctx, TYPE_INTEGER));
     let contents = extract(nav_ctx, TYPE_STRING);
-    return new File(id, name, time_create, time_update, contents);
+    return new File(id, owner_id, name, time_create, time_update, users, contents);
 }
 
 function load_board(nav_ctx)
@@ -155,10 +159,13 @@ function serialize_file(file)
 {
     let arr = [];
     arr.push(file.id + " ");
+    arr.push(file.owner_id + " ");
     arr.push(file.name + udelim);
     arr.push(file.time_create + " ");
     arr.push(file.time_update + " ");
-    arr.push(file.text + udelim);
+    for (const n of file.users)
+        arr.push(n + " ");
+    arr.push(file.contents + udelim);
     return arr.join("");
 }
 

@@ -1,4 +1,153 @@
 
+/**
+ * Manages the logged in users, and is responsible for issuing and sending user
+ * update notifications.
+ */
+function LoginManager()
+{
+    this.logins = [];
+
+    this.login = function(socket, user_id)
+    {
+        this.logins.push({socket: socket, user_id: user_id, netntfs: []});
+    }
+
+    this.logout = function(socket)
+    {
+        let index = -1;
+        for (let i in this.logins)
+            if (this.logins[i].socket === socket)
+            {
+                index = i;
+                break;
+            }
+        if (index == -1)
+            return null;
+        let user_id = this.logins[index].user_id;
+        this.logins.splice(index, 1);
+        return user_id;
+    }
+
+    this.get_user = function(user_id)
+    {
+        for (let u of this.logins)
+            if (u.user_id == user_id)
+                return u;
+        return null;
+    }
+
+    this.notify_user = function(user_id, ntf_type, ntf_data)
+    {
+        let u = get_user(user_id);
+        if (u === null)
+            return;
+        u.notifications.push({type: ntf_type, data: ntf_data});
+    }
+
+    this.notify_users = function(user_ids, ntf_type, ntf_data)
+    {
+        for (let id of user_ids)
+            this.notify_user(id, ntf_type, ntf_data);
+    }
+
+    this.dispatch_ntfs = function(io)
+    {
+        for (let user of this.logins)
+        {
+            if (user.notifications.length == 0)
+                continue;
+            io.to(user.socket).emit("user_update", user.notifications);
+            user.notifications = [];
+        }
+    }
+}
+
+
+function FileAccessManager()
+{
+    this.watchers = [];
+    this.edits = [];
+
+    this.add_watcher = function(user_id, file_id)
+    {
+        this.remove_watcher(user_id);
+        this.watchers.push({user_id: user_id, file_id: file_id});
+    }
+
+    this.remove_watcher = function(user_id)
+    {
+        let index = -1;
+        for (let i in this.watchers)
+            if (this.watchers[i].user_id == user_id)
+            {
+                index = i;
+                break;
+            }
+        if (index == -1)
+            return;
+        this.watchers.splice(index, 1);
+    }
+
+    this.get_editor = function(file_id)
+    {
+        for (let i in this.edits)
+            if (this.edits[i].file_id == file_id)
+                return i;
+        return -1;
+    }
+
+    this.add_editor = function(user_id, file_id)
+    {
+        let index = this.get_editor(file_id);
+        if (index != -1)
+            return false;
+        this.edits.push({user_id: user_id, file_id: file_id});
+        return true;
+    }
+
+    this.remove_editor = function(file_id)
+    {
+        let index = this.get_editor(file_id);
+        if (index != -1)
+            return false;
+        this.edits.splice(index, 1);
+        return true;
+    }
+}
+
+
+function CPManager()
+{
+    this.cps = [];
+
+    this.register = function(socket)
+    {
+        this.cps.push({socket: socket, notifications: []});
+    }
+
+    this.unregister = function(socket)
+    {
+        let index = -1;
+        for (let i of this.cps)
+            if (this.cps[i].socket === socket)
+            {
+                this.cps.splice(index, 1);
+                return;
+            }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 function Client(socket)
 {
     this.socket = socket;
@@ -70,13 +219,37 @@ function ControlPanelManager()
     }
 }
 
+function FileManager()
+{
+    this.files = [];
+
+    // Gets the index of the file with the given id.
+    this.get_index = function(file_id)
+    {
+        for (let i in this.files)
+            if (this.files[i].file_id == file_id)
+                return i;
+        return -1;
+    }
+
+    this.register_file(file)
+    {
+
+    }
+
+    this.register_user(file_id, user)
+}
 
 
-function UserManager()
+
+
+
+/*function UserManager()
 {
     this.users = [];
+    this.files = [];
 
-    this.register = function(socket, user)
+    this.register_user = function(socket, user)
     {
         console.log("adding: ", user.id);
         let u = {
@@ -84,47 +257,139 @@ function UserManager()
             user_id: user.id,
             user_data: user,
             notifications: [],
-            using: {
-                board_id: null,
-                file_read_id: null,
-                file_edit_id: null
-            }
+            files: [],
+            file_watcher: null
         }
         this.users.push(u);
     }
 
-
-    this.pop = function(socket)
+    this.add_file_user = function(file, socket)
     {
-        for (const index in this.users)
-        {
-            if (this.users[index].socket == socket)
-            {
-                const user = this.users[index];
-                this.users.splice(index, 1);
-                return user;
-            }
-        }
-        return null;
+
     }
 
+    this.register_file = function(socket, file)
+    {
+        console.log("Adding: ", user.id);
+        let f = {
+            file_id: file.id,
+            users: [],
+            watchers: [],
+            editor: null
+        };
+        this.files.push(f);
+        return f;
+    }
+
+
+    this.unregister_socket = function(socket)
+    {
+        let user_index = this.get_by_socket(socket);
+        if (user_index == -1)
+            return;
+        let user = this.users[user_index];
+        for (let i of user.files)
+            this.remove_file_user(i, user.user_id);
+    }
+
+
+
+    // Returns the index of the file with the given id.
+    this.get_file = function(id)
+    {
+        for (let f in this.files)
+            if (files[f].file_id == id)
+                return f;
+        return -1;
+    }
+
+    // Returns the index of the user with the given socket.
     this.get_by_socket = function(socket)
     {
-        for (const u of this.users)
-            if (u.socket == socket)
+        for (let u in this.users)
+            if (this.users[u].socket == socket)
                 return u;
-        return null;
+        return -1;
     }
 
-    this.get_by_user_id = function(user_id)
+    // Returns the index of the user with the given id.
+    this.get_user = function(user_id)
     {
-        for (const u of this.users)
-            if (u.user_id = user_id)
+        for (const u in this.users)
+            if (this.users[u].user_id = user_id)
                 return u;
-        return null;
+        return -1;
     }
 
-    this.notify = function(user_id, ntf_type, ntf_data)
+
+
+    this.remove_file_user = function(file_id, user_id)
+    {
+        let file_index = this.get_file(file_id);
+        let file = this.files[file_index];
+        file.users = file.users.filter(uid => uid != user_id);
+        file.watchers = file.watchers.filter(uid => uid != user_id);
+        if (file.editor == user_id)
+            file.editor = null;
+        if (file.users.length == 0)
+            this.files.splice(file_index, 1);
+    }
+
+    this.remove_file_watcher = function(file_id, user_id)
+    {
+        let file_index = this.get_file(file_id);
+        let file = this.files[file_index];
+        file.users = file.users.filter(uid => uid != user_id);
+        file.watchers = file.watchers.filter(uid => uid != user_id);
+        if (file.editor == user_id)
+            file.editor = null;
+    }
+
+    this.set_file_editor = function(file_id, user_id)
+    {
+        let file_index = this.get_file(file_id);
+        let file = this.files[file_index];
+        if (file.editor !== null)
+            return false;
+        file.editor = user_id;
+        return true;
+    }
+
+    this.remove_file_editor = function(file_id, user_id)
+    {
+        let file_index = this.get_file(file_id);
+        let file = this.files[file_index];
+        if (file.editor != user_id)
+            return false;
+        file.editor = null;
+        return true;
+    }
+
+    
+
+
+
+    this.issue_ntf_watchers(file_id, type, data)
+    {
+        let file_index = this.get_file(file_id);
+        if (file_index == -1)
+            return;
+        let file = this.files[file_index];
+        for (let u of file.users)
+            this.issue_ntf_user(u, type, data);
+    }
+
+    this.issue_ntf_users(file_id, type, data)
+    {
+        let file_index = this.get_file(file_id);
+        if (file_index == -1)
+            return;
+        let file = this.files[file_index];
+        for (let u of file.users)
+            this.issue_ntf_user(u, type, data);
+    }
+
+    this.issue_ntf_user = function(user_id, ntf_type, ntf_data)
     {
         const user = this.get_by_user_id(user_id);
         if (user !== null)
@@ -144,74 +409,8 @@ function UserManager()
             user.notifications = [];
         }
     }
-}
+}*/
 
 
-
-function BoardManager()
-{
-    this.boards = [];
-
-    this.register = function(board_id, socket)
-    {
-        const board = this.ensure_board(board_id);
-        board.clients.push(socket);
-        return board;
-    }
-
-    this.unregister = function(board, socket)
-    {
-        for (const i in board.clients)
-            if (board.clients[i] == socket)
-            {
-                board.clients.splice(i, 1);
-                return;
-            }
-    }
-
-    this.get_board = function(board_id)
-    {
-        for (const b of this.boards)
-            if (b.board_id == board_id)
-                return b;
-        return null;
-    }
-
-    this.ensure_board = function(board_id)
-    {
-        const b = get_board(board_id);
-        if (b !== null)
-            return b;
-        let new_board = {
-            board_id: board_id,
-            clients: [],
-            notifications: []
-        };
-        this.boards.push(new_board);
-        return new_board;
-    }
-
-    this.notify = function(board_id, ntf_type, ntf_data)
-    {
-        const board = this.get_board(board_id);
-        if (board === null)
-            return;
-        board.notifications.push({type: ntf_type, data: ntf_data});
-    }
-}
-
-
-
-function FileManager()
-{
-    this.files = [];
-
-    /*this.sample = {
-        file: file,
-        clients: []
-    }*/
-}
-
-
-exports.UserManager = UserManager;
-exports.BoardManager = BoardManager;
+exports.LoginManager = LoginManager;
+exports.FileAccessManager = FileAccessManager;

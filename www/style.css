@@ -1,0 +1,6 @@
+#data-displays > div
+{
+    float: left;
+    width: 30%;
+    margin: 10px;
+}
