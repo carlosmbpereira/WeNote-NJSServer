@@ -54,6 +54,7 @@ function render_user(user)
     container.innerHTML = 
         "id: " + user.id + "<br>" +
         "name: " + user.name + "<br>" +
+        "email: " + user.email + "<br>" +
         "password: " + user.password;
     return container;
 }
@@ -63,8 +64,7 @@ function render_notification(ntf)
     let container = document.createElement("div");
     container.innerHTML = 
         "id: " + ntf.id + "<br>" +
-        "user_id: " + 
-        "name: " + user.name + "<br>" +
+        "user_id: " + ntf.user_id + "<br>" +
         "contents: " + ntf.contents;
     return container;
 }

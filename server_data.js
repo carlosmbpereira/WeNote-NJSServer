@@ -166,6 +166,7 @@ exports.ServerData = function()
         for (const f of this.files)
             if (f.users.indexOf(user_id) != -1)
                 files.push(f);
+        return files;
     }
 
     this.users_of_file = function(file_id)
