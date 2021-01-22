@@ -57,6 +57,7 @@ function LoginManager()
         {
             if (user.netntfs.length == 0)
                 continue;
+            console.log("Sending message to user ", user.user_id);
             io.to(user.socket).emit("user_update", user.netntfs);
             user.netntfs = [];
         }

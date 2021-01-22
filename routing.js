@@ -23,9 +23,10 @@ exports.build_io = function(sdt, io)
     let aux_send_user_ntf = function(user_id, contents)
     {
         let ntf = sdt.new_notification(user_id, contents);
-        logins.notify_user(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
+        logins.notify_user(user_id, NTF_TYPE.USER_NEW_NTF, ntf);
         cpanels.notify(NTF_TYPE.CP_NEW_NOTIFICATION, {user_id, ntf});
         console.log("Notification sent to user ", user_id);
+        console.log(ntf);
     }
 
     
@@ -232,10 +233,6 @@ exports.build_io = function(sdt, io)
         socket.on("cpanel_issue_ntf", data => {
             let user = sdt.get_user(data.user_id);
             aux_send_user_ntf(data.user_id, data.contents);
-            let ntf = sdt.new_notification(data.user_id, data.contents);
-            logins.notify_user(data.user_id, NTF_TYPE.USER_NEW_NTF, ntf);
-            ntf.user_id = data.user_id;
-            cpanels.notify(NTF_TYPE.CP_NEW_NOTIFICATION, ntf);
             io.to(socket.id).emit("cpanel_issue_ntf_done", {status: STATUS.OK, data: null});
         });
 
