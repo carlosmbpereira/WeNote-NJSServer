@@ -33,8 +33,10 @@ exports.build_io = function(sdt, io)
         console.log("Connected");
 
         socket.on("disconnect", () => {
+            console.log("User exited.");
             logins.logout(socket.id);
             cpanels.unregister(socket.id);
+            console.log("Exit done.");
         });
 
         socket.on("login", data => {
@@ -66,6 +68,7 @@ exports.build_io = function(sdt, io)
             let user = sdt.get_user_email(data.email);
             if (user != null)
             {
+                console.log("Register failed: ", data);
                 io.to(socket.id).emit("register_user_done", { status: STATUS.EXISTS });
                 return;
             }
