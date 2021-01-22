@@ -41,6 +41,7 @@ function LoginManager()
         let u = this.get_user(user_id);
         if (u === null)
             return;
+        console.log("NetNTF to user ", user_id, ntf_type, ntf_data);
         u.netntfs.push({type: ntf_type, data: ntf_data});
     }
 
