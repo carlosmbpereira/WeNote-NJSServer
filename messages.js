@@ -6,6 +6,7 @@ exports.STATUS = {
     EXISTS: 402,
     ACCESS_DENIED: 403,
     NOT_FOUND: 404,
+    IN_USE: 405,
 
     // Register
     
@@ -25,6 +26,8 @@ exports.NTF_TYPE = {
     FILE_UPDATE_CONTENT: 4,
     FILE_INVITE: 5,
     FILE_REMOVE: 6,
+    FILE_START_EDIT: 7,
+    FILE_END_EDIT: 8,
 
     // Control panel
     CP_NEW_USER: 101,

@@ -88,6 +88,14 @@ function FileAccessManager()
         this.watchers.splice(index, 1);
     }
 
+    this.get_watchers = function(file_id)
+    {
+        let watchers = [];
+        for (let w of this.watchers)
+            if (w.file_id == file_id)
+                watchers.push(w.user_id);
+    }
+
     this.get_editor = function(file_id)
     {
         for (let i in this.edits)
