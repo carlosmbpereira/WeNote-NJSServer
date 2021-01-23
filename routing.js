@@ -105,7 +105,7 @@ exports.build_io = function(sdt, io)
         socket.on("user_ntf_close", data => {
             sdt.delete_ntf(data.user_id, data.ntf_id);
 
-            cpanels.notify(NTF_TYPE.CP_DEL_NOTIFICATION, data.ntf_id);
+            cpanels.notify(NTF_TYPE.CP_DEL_NOTIFICATION, {ntf_id: data.ntf_id});
         });
 
 

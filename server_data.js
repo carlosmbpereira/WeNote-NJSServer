@@ -97,7 +97,7 @@ exports.ServerData = function()
 
     this.delete_ntf = function(user_id, ntf_id)
     {
-        const user = get_user(user_id);
+        const user = this.get_user(user_id);
         user.notifications = user.notifications.filter(ntf => ntf.id !== ntf_id);
     }
 
