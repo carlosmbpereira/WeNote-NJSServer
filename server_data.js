@@ -1,4 +1,4 @@
-const { file_head, User, Notification } = require("./types");
+const { file_head, User, Notification, File } = require("./types");
 const { bulk, serialize, load } = require("./serialization");
 const fs = require("fs");
 
@@ -78,8 +78,7 @@ exports.ServerData = function()
         let id = this.ids.last_ntf_id + 1;
         this.ids.last_ntf_id = id;
         let user = this.get_user(user_id);
-        console.log(user);
-        let not = new Notification(id, Date.now(), contents);
+        let not = new Notification(id, user_id, Date.now(), contents);
         user.notifications.push(not);
         return not;
     }

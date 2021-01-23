@@ -11,6 +11,7 @@ function User(
     this.email = email;
     this.password = password;
     this.notifications = notifications;
+    this.flag_online = false;
 
     this.public_data = function()
     {
@@ -50,6 +51,7 @@ function File(
     this.time_update = time_update;
     this.users = users;
     this.contents = contents;
+    this.flag_edit = false;
 
     this.header = function()
     {
@@ -57,8 +59,9 @@ function File(
             id: this.id,
             owner_id: this.owner_id,
             name: this.name,
-            time_create: this.create,
-            time_update: this.update
+            time_create: this.time_create,
+            time_update: this.time_update,
+            flag_edit: this.flag_edit,
         };
     }
 
@@ -95,7 +98,7 @@ function Board(
         return {
             id: this.id,
             owner_id: this.owner_id,
-            name: this.name
+            name: this.name,
         };
     }
 }
@@ -104,10 +107,12 @@ function Board(
 
 function Notification(
     id,
+    user_id,
     time,
     contents
 ) {
     this.id = id;
+    this.user_id = user_id;
     this.time = time;
     this.contents = contents;
 }

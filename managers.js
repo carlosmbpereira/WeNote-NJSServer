@@ -1,3 +1,4 @@
+const { STATUS, NTF_TYPE } = require("./messages");
 
 /**
  * Manages the logged in users, and is responsible for issuing and sending user
@@ -28,6 +29,21 @@ function LoginManager()
         return user_id;
     }
 
+    this.logout_uid = function(user_id)
+    {
+        let index = -1;
+        for (let i in this.logins)
+            if (this.logins[i].user_id === user_id)
+            {
+                index = i;
+                break;
+            }
+        if (index == -1)
+            return null;
+        this.logins.splice(index, 1);
+        return user_id;
+    }
+
     this.get_user = function(user_id)
     {
         for (let u of this.logins)
@@ -36,12 +52,19 @@ function LoginManager()
         return null;
     }
 
+    this.get_user_by_socket = function(socket)
+    {
+        for (let u of this.logins)
+            if (u.socket == socket)
+                return u.user_id;
+        return null;
+    }
+
     this.notify_user = function(user_id, ntf_type, ntf_data)
     {
         let u = this.get_user(user_id);
         if (u === null)
             return;
-        console.log("NetNTF to user ", user_id, ntf_type, ntf_data);
         u.netntfs.push({type: ntf_type, data: ntf_data});
     }
 
@@ -57,7 +80,6 @@ function LoginManager()
         {
             if (user.netntfs.length == 0)
                 continue;
-            console.log("Sending message to user ", user.user_id);
             io.to(user.socket).emit("user_update", user.netntfs);
             user.netntfs = [];
         }
@@ -65,10 +87,13 @@ function LoginManager()
 }
 
 
-function FileAccessManager()
+function FileAccessManager(sdt, logins, cpanels)
 {
     this.watchers = [];
     this.edits = [];
+    this.sdt = sdt;
+    this.logins = logins;
+    this.cpanels = cpanels;
 
     this.add_watcher = function(user_id, file_id)
     {
@@ -98,7 +123,7 @@ function FileAccessManager()
                 watchers.push(w.user_id);
     }
 
-    this.get_editor = function(file_id)
+    this.get_editor_by_file = function(file_id)
     {
         for (let i in this.edits)
             if (this.edits[i].file_id == file_id)
@@ -106,22 +131,96 @@ function FileAccessManager()
         return -1;
     }
 
-    this.add_editor = function(user_id, file_id)
+    this.get_editor_by_user = function(user_id)
+    {
+        for (let i in this.edits)
+            if (this.edits[i].user_id == user_id)
+                return i;
+        return -1;
+    }
+
+
+    // Begins editing a file. Returns false if the file is already being edited.
+    this.start_edit = function(user_id, file_id)
     {
         let index = this.get_editor(file_id);
         if (index != -1)
             return false;
+        this.cancel_edit(user_id, file_id);
+
         this.edits.push({user_id: user_id, file_id: file_id});
+
+        let file = this.sdt.get_file(file_id);
+        file.flag_edit = true;
+
+        this.logins.notify_users(file.users, NTF_TYPE.FILE_START_EDIT, 
+            {file_id});
+        this.cpanels.notify(NTF_TYPE.CP_FILE_START_EDIT, {file_id});
+
         return true;
     }
 
-    this.remove_editor = function(file_id)
+
+    // Finish editing
+    this.finish_edit = function(user_id, file_id, contents, time)
     {
-        let index = this.get_editor(file_id);
-        if (index != -1)
+        // Check if the given data matches.
+        let index = this.get_editor_by_user(user_id);
+        if (index == -1)
             return false;
+        if (this.edits[index].file_id != file_id)
+            return false;
+
         this.edits.splice(index, 1);
+        let file = sdt.get_file(file_id).flag_edit;
+        file.flag_edit = false;
+        file.time_update = time;
+        file.contents = contents;
+
+        // Send notifications
+        this.logins.notify_users(file.users, NTF_TYPE.FILE_END_EDIT, 
+            { file_id, time });
+        this.cpanels.notify(NTF_TYPE.CP_FILE_END_EDIT,
+            { file_id, time });
+        this.logins.notify_users(this.get_watchers(file_id), 
+            NTF_TYPE.FILE_UPDATE_CONTENTS, { file_id, contents });
+        
         return true;
+    }
+
+
+    // Cancels an edit, and doesn't update the file.
+    this.cancel_edit = function(user_id, file_id)
+    {
+        // Check if the given data matches.
+        let index = this.get_editor_by_user(user_id);
+        if (index == -1)
+            return false;
+        if (this.edits[index].file_id != file_id)
+            return false;
+
+        this.edits.splice(index, 1);
+        file = sdt.get_file(file_id);
+        file.flag_edit = false;
+
+        // Send notifications
+        let users = sdt.users_of_file(file_id);
+        logins.notify_users(users, NTF_TYPE.FILE_END_EDIT, 
+            {file_id, time: file.time_update});
+        cpanels.notify(NTF_TYPE.CP_FILE_END_EDIT, 
+            {file_id, time: file.time_update});
+
+        return true;
+    }
+
+
+    // Auxiliary function to cancel a user's edit without knowing the file.
+    this.force_cancel_edit = function(user_id)
+    {
+        let index = this.get_editor_by_user(user_id);
+        if (index == -1)
+            return;
+        this.cancel_edit(this.edits[index].user_id, this.edits[index].file_id);
     }
 }
 
@@ -149,7 +248,9 @@ function CPManager()
     this.notify = function(ntf_type, ntf_data)
     {
         for (let cp of this.cps)
+        {
             cp.notifications.push({type: ntf_type, data: ntf_data});
+        }
     }
 
     this.dispatch_ntfs = function(io)

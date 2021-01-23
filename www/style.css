@@ -1,6 +1,53 @@
+*
+{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+
+/* Common */
+.tx-small { font-size: 11pt; }
+.tx-large { font-size: 15pt; }
+.bold { font-weight: bold; }
+
+
+.forms > form
+{
+    width: 30%;
+    float: left;
+}
+
 #data-displays > div
 {
     float: left;
     width: 30%;
     margin: 10px;
 }
+
+div.data-set > div
+{
+    position: relative;
+    background-color: #c59e9e;
+}
+
+div.data-set > div:nth-child(odd)
+{
+    background-color: #aec5d8;
+}
+
+
+div.data-block { padding: 1em; }
+div.data-block > p { margin: 0; }
+
+
+div.online-indicator
+{
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: 10px;
+    right: 10px;
+    border-radius: 50%;
+    background-color: #b32626;
+}
+
+

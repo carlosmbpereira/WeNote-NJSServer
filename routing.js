@@ -7,7 +7,7 @@ function periodic_notify(io, logins, cpanels)
 {
     logins.dispatch_ntfs(io);
     cpanels.dispatch_ntfs(io);
-    setTimeout(periodic_notify, 1000, io, logins, cpanels);
+    setTimeout(periodic_notify, 500, io, logins, cpanels);
 }
 
 
@@ -16,17 +16,27 @@ exports.build_io = function(sdt, io)
 {
     //notify_boards = new NList_Generic();
     logins = new LoginManager();
-    files = new FileAccessManager();
     cpanels = new CPManager();
+    files = new FileAccessManager(sdt, logins, cpanels);
 
 
     let aux_send_user_ntf = function(user_id, contents)
     {
         let ntf = sdt.new_notification(user_id, contents);
         logins.notify_user(user_id, NTF_TYPE.USER_NEW_NTF, ntf);
-        cpanels.notify(NTF_TYPE.CP_NEW_NOTIFICATION, {user_id, ntf});
-        console.log("Notification sent to user ", user_id);
-        console.log(ntf);
+        cpanels.notify(NTF_TYPE.CP_NEW_NOTIFICATION, ntf);
+    }
+
+    let aux_logout_user = function(user_id)
+    {
+        let status = logins.logout_uid(user_id);
+        if (status === null)
+            return;
+        let user = sdt.get_user(user_id);
+        files.force_cancel_edit(user.id);
+        files.remove_watcher(user.id);
+        user.flag_online = false;
+        cpanels.notify(NTF_TYPE.CP_USER_LOGOUT, {user_id});
     }
 
     
@@ -34,42 +44,47 @@ exports.build_io = function(sdt, io)
         console.log("Connected");
 
         socket.on("disconnect", () => {
-            console.log("User exited.");
-            logins.logout(socket.id);
+            let uid = logins.get_user_by_socket(socket.id);
+            if (uid !== null)
+                aux_logout_user(uid);
             cpanels.unregister(socket.id);
-            console.log("Exit done.");
         });
+
 
         socket.on("login", data => {
             let user = sdt.get_user_email(data.email);
             if (user === null)
             {
-                io.to(socket.id).emit("login_ret", 
+                io.to(socket.id).emit("login_done", 
                     { status: STATUS.EMAIL_NOT_REGISTERED, data: null });
             }
             else if (user.password != data.password)
             {
-                io.to(socket.id).emit("login_ret", 
+                io.to(socket.id).emit("login_done", 
                     { status: STATUS.WRONG_PASSWORD, data: null });
             }
             else
             {
-                console.log("User logged in: " + user.id);
+                // Logout the user if it's already online:
+                aux_logout_user(user.id);
+                user.flag_online = true;
+
                 logins.login(socket.id, user.id);
 
-                user = user.personal_data();
-                user.files = sdt.files_of_user(user.id).map(f => f.header());
-                io.to(socket.id).emit("login_ret", 
+                let ret = user.personal_data();
+                ret.files = sdt.files_of_user(user.id).map(f => f.header());
+                io.to(socket.id).emit("login_done", 
                     {status: STATUS.OK, data: user});
-                console.log("Login done!");
+                
+                cpanels.notify(NTF_TYPE.CP_USER_LOGIN, {user_id: user.id});
             }
         });
+
 
         socket.on("register_user", data => {
             let user = sdt.get_user_email(data.email);
             if (user != null)
             {
-                console.log("Register failed: ", data);
                 io.to(socket.id).emit("register_user_done", { status: STATUS.EXISTS });
                 return;
             }
@@ -77,7 +92,6 @@ exports.build_io = function(sdt, io)
             io.to(socket.id).emit("register_user_done", { status: STATUS.OK });
 
             cpanels.notify(NTF_TYPE.CP_NEW_USER, user);
-            console.log("Registered new user: ", user);
         });
 
         
@@ -85,11 +99,13 @@ exports.build_io = function(sdt, io)
         
         // User
         socket.on("logout", data => {
-            const user = active_users.remove(socket.id);
+            aux_logout_user(data.user_id);
         });
 
         socket.on("user_ntf_close", data => {
             sdt.delete_ntf(data.user_id, data.ntf_id);
+
+            cpanels.notify(NTF_TYPE.CP_DEL_NOTIFICATION, data.ntf_id);
         });
 
 
@@ -157,7 +173,7 @@ exports.build_io = function(sdt, io)
                 io.to(socket.id).emit("file_open_done",
                     {status: STATUS.NOT_FOUND, data: null});
             }
-            else if (file.users.indexOf(data.user_id))
+            else if (file.users.indexOf(data.user_id) == -1)
             {
                 io.to(socket.id).emit("file_open_done",
                     {status: STATUS.ACCESS_DENIED, data: null});
@@ -179,7 +195,7 @@ exports.build_io = function(sdt, io)
 
 
         socket.on("file_edit", data => {
-            let ok = files.add_editor(data.file_id);
+            let ok = files.start_edit(data.user_id, data.file_id);
             if (!ok)
             {
                 io.to(socket.id).emit("file_edit_done", 
@@ -189,21 +205,15 @@ exports.build_io = function(sdt, io)
             {
                 io.to(socket.id).emit("file_edit_done",
                     {status: STATUS.OK, data: null});
-
-                let users = sdt.users_of_file(data.file_id);
-                logins.notify_users(users, NTF_TYPE.FILE_END_EDIT, data);
             }
         });
 
-        socket.on("file_save", data => {
-            files.remove_editor(data.file_id);
-            let file = sdt.get_file(data.file_id);
-            file.contents = data.contents; 
-            
-            let users = sdt.users_of_file(data.file_id);
-            logins.notify_users(users, NTF_TYPE.FILE_END_EDIT, data);
+        socket.on("file_edit_end", data => {
+            files.finish_edit(data.user_id, data.file_id, data.contents, data.time);
+        });
 
-            users = files.get_watchers(data.file_id);
+        socket.on("file_edit_cancel", data => {
+            files.force_cancel_edit(data.user_id);
         });
 
 

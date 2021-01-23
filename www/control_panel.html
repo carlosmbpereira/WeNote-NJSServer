@@ -5,37 +5,71 @@
 <body>
     <div>
         <h2>Issue notification</h2>
-        <form id="in_form">
-            <label>User Id: </label><input type="text" id="in_user_id"><br>
-            <label>Message: </label><input type="text" id="in_text"><br>
-            <button>Submit</button>
-        </form>
+        <div class="forms">
+            <form id="in_form">
+                <h3>New Notification</h3>
+                <label>User Id: </label><input type="text" id="in_user_id"><br>
+                <label>Message: </label><input type="text" id="in_text"><br>
+                <button>Submit</button>
+            </form>
+    
+            <form id="reg_form">
+                <h3>New User</h3>
+                <label>Name: </label><input type="text" id="reg_name"><br>
+                <label>Email: </label><input type="text" id="reg_email"><br>
+                <label>Password: </label><input type="password" id="reg_password"><br>
+                <button>Submit</button>
+            </form>
+    
+            <form id="file_form">
+                <h3>New File</h3>
+                <label>Owner: </label><input type="text" id="file_owner"><br>
+                <label>Name: </label><input type="text" id="file_name"><br>
+                <button>Submit</button>
+            </form>
 
-        <form id="reg_form">
-            <label>Name: </label><input type="text" id="reg_name"><br>
-            <label>Email: </label><input type="text" id="reg_email"><br>
-            <label>Password: </label><input type="password" id="reg_password"><br>
-            <button>Submit</button>
-        </form>
+            <div style="clear:both"></div>
+        </div>
+        
         <button id="bt_save">Save Database</button>
     </div>
     
     <div id="data-displays">
-        <h1>Dados</h1>
+        <h1>Data</h1>
 
         <div id="user-display">
             <h2>Users</h2>
-            <div></div>
+            <div class="data-set">
+                <div id="user_1" class="data-block user-block">
+                    <p class="tx-large bold">1 - Name</p>
+                    <p>email - password</p>
+                    <div class="online-indicator"></div>
+                </div>
+            </div>
         </div>
 
         <div id="ntf-display">
             <h2>Notifications</h2>
-            <div></div>
+            <div class="data-set">
+                <div id="ntf_1" class="data-block ntf-block">
+                    <p class="bold">ntf-id: contents</p>
+                    <p class="tx-small">User: </p>
+                    <p class="tx-small">2341234</p>
+                    <div class="online-indicator"></div>
+                </div>
+            </div>
         </div>
 
         <div id="file-display">
             <h2>Files</h2>
-            <div></div>
+            <div class="data-set">
+                <div id="file_1" class="data-block file-block">
+                    <p class="tx-large bold">1 - Name</p>
+                    <p class="tx-small">Created: 1242</p>
+                    <p>Updated: 4213</p>
+                    <div class="online-indicator"></div>
+                </div>
+            </div>
         </div>
     </div>
 
