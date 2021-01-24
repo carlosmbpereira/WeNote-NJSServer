@@ -82,6 +82,7 @@ function load_file(nav_ctx)
     let users = [];
     while (nav_ctx.peek() != "]")
         users.push(extract(nav_ctx, TYPE_INTEGER));
+    nav_ctx.ptr += 1;
     let contents = extract(nav_ctx, TYPE_STRING);
     return new File(id, owner_id, name, time_create, time_update, users, contents);
 }
