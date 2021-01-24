@@ -103,17 +103,10 @@ exports.ServerData = function()
 
     this.delete_file = function(file_id)
     {
-        let index = -1;
-        for (let i in this.files)
-            if (this.files[i].id = file_id)
-            {
-                index = i;
-                break;
-            }
-        if (index == -1)
+        let file = this.get_file(file_id);
+        if (file == null)
             return null;
-        let file = this.files[index];
-        this.files.splice(index, 1);
+        this.files = this.files.filter(f => f.id !== file_id);
         return file;
     }
     
