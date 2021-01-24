@@ -18,7 +18,8 @@ function User(
         return {
             id: this.id,
             name: this.name,
-            email: this.email
+            email: this.email,
+            flag_online: this.flag_online,
         };
     }
 
@@ -28,7 +29,8 @@ function User(
             id: this.id,
             name: this.name,
             email: this.email,
-            notifications: this.notifications
+            notifications: this.notifications,
+            flag_online: this.flag_online,
         };
     }
 }
@@ -74,6 +76,15 @@ function File(
             if (u == user_id)
                 return true;
         return false;
+    }
+
+    // Returns a list of user ids associated with this file. This is not the 
+    // same as querying the 'user' field, because the owner will be added.
+    this.get_users = function()
+    {
+        let users = [...this.users];
+        users.push(this.owner_id);
+        return users;
     }
 }
 

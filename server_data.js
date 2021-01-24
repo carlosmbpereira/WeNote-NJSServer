@@ -163,7 +163,7 @@ exports.ServerData = function()
     {
         let files = [];
         for (const f of this.files)
-            if (f.users.indexOf(user_id) != -1)
+            if (f.user_in(user_id))
                 files.push(f);
         return files;
     }

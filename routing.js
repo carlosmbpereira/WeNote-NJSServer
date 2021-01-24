@@ -74,7 +74,7 @@ exports.build_io = function(sdt, io)
                 let ret = user.personal_data();
                 ret.files = sdt.files_of_user(user.id).map(f => f.header());
                 io.to(socket.id).emit("login_done", 
-                    {status: STATUS.OK, data: user});
+                    {status: STATUS.OK, data: ret});
                 
                 cpanels.notify(NTF_TYPE.CP_USER_LOGIN, {user_id: user.id});
             }
@@ -113,6 +113,8 @@ exports.build_io = function(sdt, io)
         // Files
         socket.on("file_create", data => {
             let file = sdt.new_file(data.user_id, data.title);
+            io.to(socket.id).emit("file_create_done", 
+                {status: STATUS.OK, data: file.header()});
 
             cpanels.notify(NTF_TYPE.CP_NEW_FILE, file.header());
         });
@@ -173,17 +175,20 @@ exports.build_io = function(sdt, io)
                 io.to(socket.id).emit("file_open_done",
                     {status: STATUS.NOT_FOUND, data: null});
             }
-            else if (file.users.indexOf(data.user_id) == -1)
+            else if (!file.user_in(data.user_id))
             {
                 io.to(socket.id).emit("file_open_done",
                     {status: STATUS.ACCESS_DENIED, data: null});
             }
             else
             {
-                let ret = file.contents;
+                file = {...file};
+                file.users = file.users.map(uid => 
+                    sdt.get_user(uid).public_data());
+                file.users.push(sdt.get_user(file.owner_id).public_data());
 
                 io.to(socket.id).emit("file_open_done",
-                    {status: STATUS.OK, data: ret});
+                    {status: STATUS.OK, data: file});
                 files.add_watcher(data.user_id, data.file_id);
             }
         });
@@ -209,7 +214,7 @@ exports.build_io = function(sdt, io)
         });
 
         socket.on("file_edit_end", data => {
-            files.finish_edit(data.user_id, data.file_id, data.contents, data.time);
+            files.finish_edit(data.user_id, data.file_id, data.contents, Date.now());
         });
 
         socket.on("file_edit_cancel", data => {
@@ -227,6 +232,7 @@ exports.build_io = function(sdt, io)
                     id: u.id,
                     name: u.name,
                     email: u.email,
+                    flag_online: u.flag_online,
                     password: u.password
                 }
             });

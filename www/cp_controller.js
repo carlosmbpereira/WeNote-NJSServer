@@ -108,7 +108,7 @@ function render_user(user)
     container.appendChild(head);
     container.appendChild(login_info);
 
-    if (user.online)
+    if (user.flag_online)
     {
         let marker = document.createElement("div");
         marker.classList.add("online-indicator");
@@ -177,8 +177,8 @@ function update_user(user)
 
 function update_file(file)
 {
-    let elem = document.getElementById("file_" + user.id);
-    users_div.replaceChild(render_file(file), elem);
+    let elem = document.getElementById("file_" + file.id);
+    files_div.replaceChild(render_file(file), elem);
 }
 
 
@@ -272,7 +272,7 @@ socket.on("cpanel_update", (data) => {
                 let user = find_user(ntf.data.user_id);
                 if (user === null)
                     break;
-                user.online = true;
+                user.flag_online = true;
                 update_user(user);
                 break;
             }
@@ -282,7 +282,7 @@ socket.on("cpanel_update", (data) => {
                 let user = find_user(ntf.data.user_id);
                 if (user === null)
                     break;
-                user.online = false;
+                user.flag_online = false;
                 update_user(user);
                 break;
             }

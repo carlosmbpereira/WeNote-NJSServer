@@ -121,6 +121,7 @@ function FileAccessManager(sdt, logins, cpanels)
         for (let w of this.watchers)
             if (w.file_id == file_id)
                 watchers.push(w.user_id);
+        return watchers;
     }
 
     this.get_editor_by_file = function(file_id)
@@ -143,7 +144,7 @@ function FileAccessManager(sdt, logins, cpanels)
     // Begins editing a file. Returns false if the file is already being edited.
     this.start_edit = function(user_id, file_id)
     {
-        let index = this.get_editor(file_id);
+        let index = this.get_editor_by_file(file_id);
         if (index != -1)
             return false;
         this.cancel_edit(user_id, file_id);
@@ -153,7 +154,7 @@ function FileAccessManager(sdt, logins, cpanels)
         let file = this.sdt.get_file(file_id);
         file.flag_edit = true;
 
-        this.logins.notify_users(file.users, NTF_TYPE.FILE_START_EDIT, 
+        this.logins.notify_users(file.get_users(), NTF_TYPE.FILE_START_EDIT, 
             {file_id});
         this.cpanels.notify(NTF_TYPE.CP_FILE_START_EDIT, {file_id});
 
@@ -172,7 +173,7 @@ function FileAccessManager(sdt, logins, cpanels)
             return false;
 
         this.edits.splice(index, 1);
-        let file = sdt.get_file(file_id).flag_edit;
+        let file = sdt.get_file(file_id);
         file.flag_edit = false;
         file.time_update = time;
         file.contents = contents;
