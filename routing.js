@@ -120,6 +120,11 @@ exports.build_io = function(sdt, io)
         });
 
 
+        socket.on("file_delete", data => {
+            files.delete_file(data.user_id, data.file_id);
+        })
+
+
         socket.on("file_invite_user", data => {
             let file = sdt.get_file(data.file_id);
             if (!file)
@@ -138,6 +143,11 @@ exports.build_io = function(sdt, io)
 
                 logins.notify_user(data.user_id, NTF_TYPE.FILE_INVITE, header);
                 aux_send_user_ntf(data.user_id, "You've been added to '" + file.name + "'.");
+
+                let users = files.get_watchers(data.file_id);
+                let user = sdt.get_user(data.user_id);
+                logins.notify_users(users, NTF_TYPE.FILE_ADD_USER, 
+                    {file_id: data.file_id, user: user.public_data()});
 
                 io.to(socket.id).emit("file_invite_user_done", {status: STATUS.OK, data: null});
             }
@@ -160,10 +170,12 @@ exports.build_io = function(sdt, io)
             {
                 file.users = file.users.filter(u => u !== data.user_id);
 
-                let ntf = sdt.new_notification();
-
                 logins.notify_user(data.user_id, NTF_TYPE.FILE_REMOVE, {file_id});
                 aux_send_user_ntf(data.user_id, "You've been removed from '" + file.name + "'.");
+
+                let users = files.get_watchers(data.file_id);
+                logins.notify_users(users, NTF_TYPE.FILE_ADD_USER, 
+                    {file_id: data.file_id, user_id});
             }
         });
 

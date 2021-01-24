@@ -330,7 +330,7 @@ socket.on("cpanel_update", (data) => {
                     files.splice(i, 1);
                     break;
                 }
-            ntfs_div.removeChild(document.getElementById("file_" + ntf.data.file_id));
+            files_div.removeChild(document.getElementById("file_" + ntf.data.file_id));
             break;
         }
     }

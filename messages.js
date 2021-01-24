@@ -27,6 +27,8 @@ exports.NTF_TYPE = {
     FILE_REMOVE: 6,
     FILE_START_EDIT: 7,
     FILE_END_EDIT: 8,
+    FILE_ADD_USER: 9,
+    FILE_REMOVE_USER: 10,
 
     // Control panel
     CP_USER_LOGIN: 120,

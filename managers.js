@@ -179,7 +179,7 @@ function FileAccessManager(sdt, logins, cpanels)
         file.contents = contents;
 
         // Send notifications
-        this.logins.notify_users(file.users, NTF_TYPE.FILE_END_EDIT, 
+        this.logins.notify_users(file.get_users(), NTF_TYPE.FILE_END_EDIT, 
             { file_id, time });
         this.cpanels.notify(NTF_TYPE.CP_FILE_END_EDIT,
             { file_id, time });
@@ -205,8 +205,7 @@ function FileAccessManager(sdt, logins, cpanels)
         file.flag_edit = false;
 
         // Send notifications
-        let users = sdt.users_of_file(file_id);
-        logins.notify_users(users, NTF_TYPE.FILE_END_EDIT, 
+        logins.notify_users(file.get_users(), NTF_TYPE.FILE_END_EDIT, 
             {file_id, time: file.time_update});
         cpanels.notify(NTF_TYPE.CP_FILE_END_EDIT, 
             {file_id, time: file.time_update});
@@ -222,6 +221,24 @@ function FileAccessManager(sdt, logins, cpanels)
         if (index == -1)
             return;
         this.cancel_edit(this.edits[index].user_id, this.edits[index].file_id);
+    }
+
+
+    // Delete a given file
+    this.delete_file = function(user_id, file_id)
+    {
+        let file = sdt.get_file(file_id);
+        if (file == null)
+            return false;
+        if (file.owner_id != user_id)
+            return false;
+        this.watchers = this.watchers.filter(w => w.file_id != file_id);
+        this.edits = this.edits.filter(e => e.file_id != file_id);
+        sdt.delete_file(file_id);
+
+        logins.notify_users(file.get_users(), NTF_TYPE.FILE_REMOVE,
+            {file_id});
+        cpanels.notify(NTF_TYPE.CP_DEL_FILE, {file_id});
     }
 }
 
