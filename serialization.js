@@ -67,7 +67,7 @@ function load_user(nav_ctx)
     let password = extract(nav_ctx, TYPE_STRING);
     let notifications = [];
     while (nav_ctx.peek() != "]")
-        notifications.push(load_notification(nav_ctx));
+        notifications.push(load_notification(id, nav_ctx));
     nav_ctx.ptr += 1;
     return new User(id, name, email, password, notifications);
 }
@@ -102,12 +102,12 @@ function load_board(nav_ctx)
     return new Board(id, owner_id, name, users, files);
 }
 
-function load_notification(nav_ctx)
+function load_notification(user_id, nav_ctx)
 {
     let id = extract(nav_ctx, TYPE_INTEGER);
     let time = extract(nav_ctx, TYPE_INTEGER);
-    let contents = extract(nav_ctx, TYPE_INTEGER);
-    return new Notification(id, time, contents);
+    let contents = extract(nav_ctx, TYPE_STRING);
+    return new Notification(id, user_id, time, contents);
 }
 
 function load_ids(nav_ctx)
@@ -165,6 +165,7 @@ function serialize_file(file)
     arr.push(file.time_update + " ");
     for (const n of file.users)
         arr.push(n + " ");
+    arr.push("]");
     arr.push(file.contents + udelim);
     return arr.join("");
 }
