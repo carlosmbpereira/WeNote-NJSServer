@@ -127,25 +127,25 @@ exports.build_io = function(sdt, io)
 
         socket.on("file_invite_user", data => {
             let file = sdt.get_file(data.file_id);
-            if (!file)
+            let user = sdt.get_user_email(data.user_email);
+            if (file == null || user == null)
             {
                 io.to(socket.id).emit("file_invite_user_done", {status: STATUS.NOT_FOUND, data: null});
             }
-            else if (file.user_in(data.user_id))
+            else if (file.user_in(user.id))
             {
                 io.to(socket.id).emit("file_invite_user_done", {status: STATUS.EXISTS, data: null});
             }
             else
             {
-                file.users.push(data.user_id);
+                file.users.push(user.id);
 
                 let header = file.header();
 
-                logins.notify_user(data.user_id, NTF_TYPE.FILE_INVITE, header);
-                aux_send_user_ntf(data.user_id, "You've been added to '" + file.name + "'.");
+                logins.notify_user(user.id, NTF_TYPE.FILE_INVITE, header);
+                aux_send_user_ntf(user.id, "You've been added to '" + file.name + "'.");
 
                 let users = files.get_watchers(data.file_id);
-                let user = sdt.get_user(data.user_id);
                 logins.notify_users(users, NTF_TYPE.FILE_ADD_USER, 
                     {file_id: data.file_id, user: user.public_data()});
 
@@ -170,12 +170,12 @@ exports.build_io = function(sdt, io)
             {
                 file.users = file.users.filter(u => u !== data.user_id);
 
-                logins.notify_user(data.user_id, NTF_TYPE.FILE_REMOVE, {file_id});
+                logins.notify_user(data.user_id, NTF_TYPE.FILE_REMOVE, {file_id: data.file_id});
                 aux_send_user_ntf(data.user_id, "You've been removed from '" + file.name + "'.");
 
                 let users = files.get_watchers(data.file_id);
-                logins.notify_users(users, NTF_TYPE.FILE_ADD_USER, 
-                    {file_id: data.file_id, user_id});
+                logins.notify_users(users, NTF_TYPE.FILE_REMOVE_USER, 
+                    {file_id: data.file_id, user_id: data.user_id});
             }
         });
 
