@@ -1,6 +1,12 @@
 # WeNote-NJSServer
 Server component of the WeNote app.
 
+# Grupo
+180221093 Duarte Miguel Castanheira Gonçalves
+180221033 Fábio André de Brito Oliveira
+180221026 António Carlos Ferreira Pinto
+180221027 Alexandre Miguel Marques Pereira
+
 # Setup
 Para correr o servidor, fazer npm install, e depois node index.js. O servidor
 vai estar ligado na porta 7501.
